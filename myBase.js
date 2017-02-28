@@ -68,7 +68,7 @@ var myBase = {
 
     },
 
-    /* 保存 / 读取 key（备用） 【 getQueryObject(url).userId 】 */
+    /* 保存 / 读取 key（备用） 【 saveKey() 】 */
     saveKey: function () {
         /*
         const STORAGE_KEY = "my-key"
