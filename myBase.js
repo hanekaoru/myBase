@@ -1704,6 +1704,55 @@
         var fibonacci = memoizer([0, 1], function (shell, n) {
             return shell(n - 1) + shell(n - 2);
         })
+
+
+        // ------------------------------------------------------
+
+        // 或者可以利用参数来 记录 / 更新 状态
+        function fib (max) {
+            var t,
+                a = 0,
+                b = 1,
+                arr = [0, 1];
+            while (arr.length < max) {
+                t = a + b;
+                a = b;
+                b = t;
+                arr.push(t)
+            }
+            return arr;
+        }
+
+
+        // 再或者可以利用 ES6 的 generator 改写
+        function* fib (max) {
+            var t,
+                a = 0,
+                b =1,
+                n = 1;
+            while (n < max) {
+                yield a;
+                t = a + b;
+                a = b;
+                b = t;
+                n++;
+            }
+            return a;
+        }
+        
+        // 调用
+        var f = fib(5);
+        f.next(); // {value: 0, done: false}
+        f.next(); // {value: 1, done: false}
+        f.next(); // {value: 1, done: false}
+        f.next(); // {value: 2, done: false}
+        f.next(); // {value: 3, done: true}
+
+        // 或者使用 for ... of 循环迭代 generator 对象
+        for (var x of fib(5)) {
+            console.log(x);
+        }
+        
     }
 
 
