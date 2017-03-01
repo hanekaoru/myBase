@@ -7,7 +7,7 @@
  *  个人工具方法类库集合，部分方法依赖 jQuery
  * 
  *  @created： by VSC
- *  @author： shaobo（https://github.com/hanekaoru/）
+ *  @author： shaobo（http://hanekaoru.com/）
  *  @version：  2017-02-28（新建）
  *  
  *  添加的 {} 是便于代码折叠的，并无实际意义
