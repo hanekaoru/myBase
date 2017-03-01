@@ -10,8 +10,9 @@
  *  @author： shaobo（https://github.com/hanekaoru/）
  *  @version：  2017-02-28（新建）
  *  
- *  2017-02-28  添加一些操作 dom 相关的方法
- *  2017-03-01  添加一些光标相关方法以及高阶函数 
+ *  添加的 {} 是便于代码折叠的，并无实际意义
+ *  2017-02-28  添加 dom 操作相关的方法，数据获取等
+ *  2017-03-01  添加 光标（range）相关方法，高阶函数，图片处理
  *  
  *=======================================================================
  */
@@ -770,7 +771,386 @@
     }
 
 
+    /* 当点击 div 以外的地方，隐藏该 div （比如弹出层，点击弹出层之外的地方隐藏弹出层） 【 e.stopPropagation() 】 */
+    /**
+     * --------------------------------
+     * 
+     *  原理 - 点击该层的时候 阻止事件冒泡
+     * 
+     *  样式可以在下方 placeholder.css({...}) 中调整
+     * 
+     * --------------------------------
+     * 
+     */
+     {
+        window.onload = function () {
 
+            document.onclick = function (e) {
+                $("layer").style.display = "none";
+            }
+
+            $("btn").onclick = function (e) {
+                $("layer").style.display = "block";
+                e = e || event; stopFunc(e);
+            }
+
+            $("layer").onclick = function (e) {
+                e = e || event; stopFunc(e);
+            }
+        }
+
+        function $(id) {
+            return document.getElementById(id);
+        }
+
+        function stopFunc(e) {
+            e.stopPropagation ? e.stopPropagation() : e.cancelBubble = true;
+        }
+     }  
+
+
+
+    /* textarea 高度自适应 【 makeExpandingArea(areas) 】 */
+    /**
+     * --------------------------------
+     * 
+     *  页面布局：
+     * 
+     *  需要注意的是 #textarea 的 class后有一个空格（否则添加的 class 会连在一起）
+     *  <div id="textarea" class="expandingArea ">
+     *      <pre><span></span><br></pre>
+     *      <textarea placeholder="标题" maxlength="45"></textarea>
+     *  </div>
+     * 
+     *  应用：
+     * 
+     *  var areas = document.getElementById("textarea");
+     * 
+     *  makeExpandingArea(areas);
+     * --------------------------------
+     * 
+     */
+    function makeExpandingArea(container) {
+
+        var area = container.getElementsByTagName("textarea")[0];
+        var span = container.getElementsByTagName("span")[0];
+
+        if (area.addEventListener) {
+
+            area.addEventListener("input", function () {
+                span.textContent = area.value;
+            }, false);
+
+            span.textContent = area.value;
+
+        } else if (area.attachEvent) {
+
+            area.attachEvent("onpropertychange", function () {
+                var html = area.value.replace(/\n/g, "<br/>");
+                span.innerText = html;
+            });
+
+            var html = area.value.replace(/\n/g, "<br/>");
+            span.innerText = html;
+
+        }
+
+        // IE9
+        if (window.VBArray && window.addEventListener) {
+
+            area.attachEvent("onkeydown", function () {
+                var key = window.event.keyCode;
+                if (key == 8 || key == 46) span.textContent = area.value;
+
+            });
+
+            // 处理粘贴
+            area.attachEvent("oncut", function () {
+                span.textContent = area.value;
+            });
+
+        }
+
+        container.className += "active";
+
+    } 
+
+
+    /* textarea 高度自适应（和上面那个的区别是这个一个超出限定范围后自动出现滚动条） 【 autoResize() 】 */
+    /**
+     * --------------------------------
+     * 
+     *  应用：
+     * 
+     *  <textarea id="txt" rows="5" cols="50" onkeyup="autoResize()" style="overflow-y:hidden;"></textarea>
+     * 
+     * 
+     * --------------------------------
+     * 
+     */
+    function autoResize() {
+
+        // 最小高度
+        var minRows = 5;
+
+        // 最大高度，超过则出现滚动条
+        var maxRows = 12;
+
+        var t = document.getElementById("txt");
+        
+        if (t.scrollTop == 0) {
+            t.scrollTop = 1;
+        }
+
+        while (t.scrollTop == 0) {
+            if (t.rows > minRows)
+                t.rows--;
+            else
+                break;
+
+            t.scrollTop = 1;
+
+            if (t.rows < maxRows) {
+                t.style.overflowY = "hidden";
+            }
+                
+            if (t.scrollTop > 0) {
+                t.rows++;
+                break;
+            }
+        }
+        
+        while (t.scrollTop > 0) {
+
+            if (t.rows < maxRows) {
+                t.rows++;
+                if (t.scrollTop == 0) t.scrollTop = 1;
+            } else {
+                t.style.overflowY = "auto";
+                break;
+            }
+
+        }
+    }
+
+
+
+    /* 修正 IOS/安卓 下拍照图片角度偏移（旋转）问题 【 getImgData(img（图片的 base64）, dir（exif 获取的方向信息）, next（回调方法，返回校正方向后的 base64）) 】 */
+    /**
+     * --------------------------------
+     * 
+     *  这里使用的是 exif.js
+     * 
+     *  var file = document.getElementById("input[file]").files[0];
+     *  
+     *  // 配合下面的 getImgData() 函数修正图片旋转问题
+     *  var orientation;
+     *  EXIF.getData(file, function () {
+     *      orientation = EXIF.getTag(this, "Orientation");
+     *  });
+     *  
+     *  var reader = new FileReader();
+     *  
+     *  reader.readAsDataURL(file);
+     *  
+     *  reader.onload = function (e) {
+     *  
+     *      getImgData(this.result, orientation, function (data) {
+     *          // 修正后的 base64
+     *          console.log(data)
+     *      });
+     *      
+     *  }
+     * 
+     *  说多一句，如果图片服务器使用的是阿里云的，就不会有这个问题（因为阿里云的图片平台会自动校正这个问题）
+     * 
+     * --------------------------------
+     * 
+     */
+    function getImgData(img, dir, next) {
+
+        var image = new Image();
+
+        image.onload = function () {
+
+            var degree = 0, drawWidth, drawHeight, width, height;
+            drawWidth = this.naturalWidth;
+            drawHeight = this.naturalHeight;
+
+            // 改变一下图片大小
+            var maxSide = Math.max(drawWidth, drawHeight);
+
+            if (maxSide > 1024) {
+                var minSide = Math.min(drawWidth, drawHeight);
+                minSide = minSide / maxSide * 1024;
+                maxSide = 1024;
+                if (drawWidth > drawHeight) {
+                    drawWidth = maxSide;
+                    drawHeight = minSide;
+                } else {
+                    drawWidth = minSide;
+                    drawHeight = maxSide;
+                }
+            }
+
+            // 创建画布
+            var canvas = document.createElement('canvas');
+            canvas.width = width = drawWidth;
+            canvas.height = height = drawHeight;
+            var context = canvas.getContext('2d');
+
+            // 判断图片方向，重置 canvas 大小，确定旋转角度，iphone 默认的是 home 键在右方的横屏拍摄方式
+            switch (dir) {
+
+                // iphone 横屏拍摄，此时 home 键在左侧
+                case 3:
+                    degree = 180;
+                    drawWidth = -width;
+                    drawHeight = -height;
+                    break;
+
+                // iphone 竖屏拍摄，此时 home 键在下方(正常拿手机的方向)
+                case 6:
+                    canvas.width = height;
+                    canvas.height = width;
+                    degree = 90;
+                    drawWidth = width;
+                    drawHeight = -height;
+                    break;
+
+                // iphone 竖屏拍摄，此时 home 键在上方
+                case 8:
+                    canvas.width = height;
+                    canvas.height = width;
+                    degree = 270;
+                    drawWidth = -width;
+                    drawHeight = height;
+                    break;
+            }
+
+            // 使用 canvas 旋转校正
+            context.rotate(degree * Math.PI / 180);
+            context.drawImage(this, 0, 0, drawWidth, drawHeight);
+
+            // 返回校正图片
+            next(canvas.toDataURL("image/jpeg", .8));
+
+        }
+
+        image.src = img;
+        
+    }
+
+
+
+    /* 图片自定义裁剪大小上传 【 convertToData(url, canvasdata, cropdata, callback) 】 */
+    /**
+     * --------------------------------
+     * 
+     *  需要注意的一点就是，区域裁剪需要放到 image.onload = function () { ... } 中
+     * 
+     * --------------------------------
+     * 
+     */
+     {
+
+        // 图片裁剪
+        var $image = $("img");
+
+        // 图片加载完成后在进行裁剪
+        $image.on("load", function () {
+
+            // 裁剪框容器位置居中，如果图片过大，加上限定范围
+            if ($image.height() > $(window).height()) {
+                $("imgWrap").height($(window).height())
+            } else {
+                $("imgWrap").css({
+                    left: 0,
+                    top: $(window).height() / 2 - $("imgWrap").height() / 2
+                })
+            }
+
+            // 裁剪，获取裁剪参数 x 坐标，y 坐标，width，height
+            $image.cropper({
+                aspectRatio: 16 / 9,  // 裁剪比例
+                guides: false,
+                autoCropArea: 1,
+                zoomable: false,
+                crop: function (data) {
+                    // 阿里云的图片处理的坐标不能有小数点，否则会报错
+                    // 阿里云图片预览的话需要对应的裁剪坐标参数来得到裁剪后的图片
+                    var coord = "x_" + data.x.toFixed(0) + ",y_" + (data.y.toFixed(0)) + ",w_" + (data.width).toFixed(0) + ",h_" + (data.height).toFixed(0);
+                }
+            });
+
+        })
+
+        // 点击后获取到裁剪信息
+        $("#btn").on("click", function () {
+
+            // 获取参数
+            var src = $image.eq(0).attr("src");
+            var canvasdata = $image.cropper("getCanvasData");
+            var cropBoxData = $image.cropper('getCropBoxData');
+
+            // 调用 convertToData() 方法，获取裁剪后的 base64 即为最终裁剪后的数据
+            convertToData(src, canvasdata, cropBoxData, function (basechar) {
+                $("#newImg").attr("src", basechar).show();
+            });
+
+        })
+
+
+        /**
+         * --------------------------------
+         * 
+         *  url          图片的 url 地址
+         * 
+         *  canvasdata   利用 cropper 获取  var canvasdata = $image.cropper("getCanvasData");
+         * 
+         *  cropBoxData  同上              var cropBoxData = $image.cropper('getCropBoxData');
+         * 
+         *  callback     回调函数
+         * 
+         * --------------------------------
+         * 
+         */
+        function convertToData(url, canvasdata, cropdata, callback) {
+
+            var cropw = cropdata.width; // 剪切的长
+            var croph = cropdata.height; // 剪切的宽 
+            var imgw = canvasdata.width; // 图片缩放或则放大后的高 
+            var imgh = canvasdata.height; // 图片缩放或则放大后的高 
+
+            var poleft = canvasdata.left - cropdata.left; // canvas 定位图片的左边位置 
+            var potop = canvasdata.top - cropdata.top; // canvas 定位图片的上边位置 
+
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext('2d');
+
+            canvas.width = cropw;
+            canvas.height = croph;
+
+            var img = new Image();
+            img.src = url;
+
+            img.onload = function () {
+
+                this.width = imgw;
+                this.height = imgh;
+
+                // canvas 与 图片 的裁剪之间的关系位置 
+                ctx.drawImage(this, poleft, potop, this.width, this.height);
+
+                // 这里的 1 是处理图片的清晰度（0-1）之间,当然越小图片越模糊,处理后的图片大小也就越小 
+                var base64 = canvas.toDataURL('image/jpg', 1);
+
+                callback && callback(base64)      // 回调 base64 字符串 
+
+            }
+        }
+
+     }
 
 
 
@@ -955,6 +1335,50 @@
 
         return clientWidth * 1 / 16;
     })();
+
+
+
+    /* 元素失去焦点隐藏 iphone 的软键盘 【 ... 】*/
+    {
+        //判断是否为苹果
+        var isIPHONE = navigator.userAgent.toUpperCase().indexOf('IPHONE') != -1;
+
+        if (isIPHONE) {
+            var input = new objBlur('input');
+            input = null;
+        }
+
+        // 元素失去焦点隐藏iphone的软键盘
+        function objBlur(id, time) {
+
+            if (typeof id != 'string') throw new Error('objBlur()参数错误');
+
+            var obj = document.getElementById(id),
+
+                time = time || 300,
+
+                docTouchend = function (event) {
+                    if (event.target != obj) {
+                        setTimeout(function () {
+                            obj.blur();
+                            document.removeEventListener('touchend', docTouchend, false);
+                        }, time);
+                    }
+                };
+
+            if (obj) {
+
+                obj.addEventListener('focus', function () {
+                    document.addEventListener('touchend', docTouchend, false);
+                }, false);
+
+            } else {
+
+                throw new Error('objBlur()没有找到元素');
+
+            }
+        }
+    }
 
 
 
@@ -1288,3 +1712,32 @@
 
 
 // ------------------------ 正则 ---------------------------------//
+
+
+
+
+    /* 返回 str 中出现次数最多的字符 【 fineStr(str, 0, []) 】 */
+    function fineStr(s, n, fs) {
+
+        var f = s.match(/^./)[0];
+        var rf = new RegExp(f, "g");
+        var nn = s.match(rf).length;
+
+        if (nn == n) fs.push(f);
+
+        if (nn > n) { fs = []; fs.push(f); n = nn }
+
+        s = s.replace(rf, "");
+
+        if (s.length < n) { return ["出现次数最多的字符是：" + fs.join(","), "总次数为：" + n]; }
+
+        return fineStr(s, n, fs);
+
+    }
+
+
+    /* 去除字符串两边空格 【 trim(str) 】 */
+    function trim(str) {
+        return str.replace(/(^\s*)|(\s*$)/g, "");
+    }
+
