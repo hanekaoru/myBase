@@ -8,11 +8,12 @@
  * 
  *  @created： by VSC
  *  @author： shaobo（http://hanekaoru.com/）
- *  @version：  2017-02-28（新建）
+ *  @version：  2017-02-28
  *  
  *  添加的 {} 是便于代码折叠的，并无实际意义
  *  2017-02-28  添加 dom 操作相关的方法，数据获取等
  *  2017-03-01  添加 光标（range）相关方法，高阶函数，图片处理
+ *  2017-03-09  添加 base64 转 blob 方法
  *  
  *=======================================================================
  */
@@ -1153,6 +1154,41 @@
      }
 
 
+    /* 禁止换行（回车键，移动端软键盘上的换行键位同样有效） 【 checkEnter(e) 】 */
+    function checkEnter(e) {
+        var et = e || window.event;
+        var keycode = et.charCode || et.keyCode;
+        if (keycode == 13) {
+            if (window.event) {
+                window.event.returnValue = false;
+            } else {
+                e.preventDefault();
+            }
+        }
+    }
+
+
+    /* base64 格式 转为 blob 格式 【 ... 】*/
+    function dataURItoBlob(base64Data) {
+
+        var byteString;
+
+        if (base64Data.split(",")[0].indexOf("base64") >= 0) {
+            byteString = atob(base64Data.split(",")[1]);
+        } else {
+            byteString = unescape(base64Data.split(",")[1]);
+        }
+            
+        var mimeString = base64Data.split(",")[0].split(":")[1].split(";")[0];
+        var ia = new Uint8Array(byteString.length);
+
+        for (var i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        
+        return new Blob([ia], { type: mimeString });
+    }    
+
 
 
 // ------------------------ 获取数据 ---------------------------------//
@@ -1704,55 +1740,6 @@
         var fibonacci = memoizer([0, 1], function (shell, n) {
             return shell(n - 1) + shell(n - 2);
         })
-
-
-        // ------------------------------------------------------
-
-        // 或者可以利用参数来 记录 / 更新 状态
-        function fib (max) {
-            var t,
-                a = 0,
-                b = 1,
-                arr = [0, 1];
-            while (arr.length < max) {
-                t = a + b;
-                a = b;
-                b = t;
-                arr.push(t)
-            }
-            return arr;
-        }
-
-
-        // 再或者可以利用 ES6 的 generator 改写
-        function* fib (max) {
-            var t,
-                a = 0,
-                b =1,
-                n = 1;
-            while (n < max) {
-                yield a;
-                t = a + b;
-                a = b;
-                b = t;
-                n++;
-            }
-            return a;
-        }
-        
-        // 调用
-        var f = fib(5);
-        f.next(); // {value: 0, done: false}
-        f.next(); // {value: 1, done: false}
-        f.next(); // {value: 1, done: false}
-        f.next(); // {value: 2, done: false}
-        f.next(); // {value: 3, done: true}
-
-        // 或者使用 for ... of 循环迭代 generator 对象
-        for (var x of fib(5)) {
-            console.log(x);
-        }
-        
     }
 
 
