@@ -1216,7 +1216,7 @@ function checkEnter(e) {
 ----
 
 ```js
-/* base64 格式 转为 blob 格式 【 ... 】*/
+/* base64 格式 转为 blob 格式 【 ... 】 */
 function dataURItoBlob(base64Data) {
 
     var byteString;
@@ -1235,6 +1235,72 @@ function dataURItoBlob(base64Data) {
     }
 
     return new Blob([ia], { type: mimeString });
+}
+```
+
+----
+
+```js
+/* ajax 搜索操作（search） 【 search("Hello World", console.log, console.error) 】 */
+function search(term, onload, onerror) {
+
+	var xhr, results, url;
+	url = "url/search?q=" + term;
+
+	xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+
+	xhr.onload = function(e) {
+		if (this.status === 200 && this.readyState == 4) {
+			results = JSON.parse(this.responseText);
+			onload(results);
+		}
+	};
+
+	xhr.onerror = function(e) {
+		onerror(e);
+	};
+
+	xhr.send();
+
+}
+```
+
+----
+
+```js
+/* ajax 搜索操作（search）【Promise 版本（使用方法同上）】 */
+function search(term, onload, onerror) {
+
+	var url = "url/search?q=" + term;
+	var xhr = new XMLHttpRequest();
+	var result;
+
+	var p = new Promise(function(resolve, reject) {
+
+		xhr = new XMLHttpRequest();
+		xhr.open("GET", url, true);
+
+		xhr.onload = function(e) {
+		xhr.open("GET", url, true);
+
+		xhr.onload = function(e) {
+            if (this.status === 200 && this.readyState == 4) {
+                results = JSON.parse(this.responseText);
+                resolve(results);
+            };
+        }
+
+        xhr.onerror = function(e) {
+            reject(e);
+        };
+
+        xhr.send();
+        
+	});
+
+	return p;
+
 }
 ```
 
